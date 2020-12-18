@@ -1,0 +1,286 @@
+﻿@using CrudModalVanillaJs.Models
+@model PersonaViewModel
+@{
+    ViewBag.Title = "Index";
+}
+
+<br />
+<h2 class="is-size-4">Mantenimiento Persona</h2>
+<br />
+<button class="button is-primary" id="btn">Nuevo Registro</button>
+<br />
+<br />
+<table class="table is-fullwidth">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Edad</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="lista">
+    </tbody>
+    
+</table>
+
+<div class="modal" id="myModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title" id="nombreModal">Modal title</p>
+            <button class="delete" aria-label="close" data-bulma-modal="close"></button>
+        </header>
+        <section class="modal-card-body">
+            <form id="form">
+                @Html.HiddenFor(d => d.ID, new { id = "IdPersona" })
+                <div class="field">
+                    @Html.LabelFor(d => d.Nombre, new { @class = "label" })
+
+                    <div class="control">
+                        @Html.TextBoxFor(d => d.Nombre, new { @class = "input", placeholder = "Nombre", id = "txtNombre" })
+                    </div>
+                    @Html.ValidationMessageFor(d => d.Nombre, "", new { @class = "help is-danger", id = "txtError" })
+                </div>
+                <div class="field">
+                    @Html.LabelFor(d => d.Apellido, new { @class = "label" })
+
+                    <div class="control">
+                        @Html.TextBoxFor(d => d.Apellido, new { @class = "input", placeholder = "Apellido", id = "txtApellido" })
+                    </div>
+                    @Html.ValidationMessageFor(d => d.Apellido, "", new { @class = "is-warning" })
+                </div>
+                <div class="field">
+                    @Html.LabelFor(d => d.Edad, new { @class = "label" })
+
+                    <div class="control">
+                        @Html.TextBoxFor(d => d.Edad, new { @class = "input", placeholder = "Edad", id = "txtEdad" })
+                    </div>
+                    @Html.ValidationMessageFor(d => d.Edad, "", new { @class = "is-warning" })
+                </div>
+
+            </form>
+            <footer class="modal-card-foot">
+                <button class="button is-success" id="btnGuardar">Guardar</button>
+                <button class="button" data-bulma-modal="close">Cancelar</button>
+            </footer>
+        </section>
+
+    </div>
+</div>
+
+<script>
+    //Clase para el Modal Bulma
+    class BulmaModal {
+
+        constructor(selector) {
+            this.elem = document.querySelector(selector)
+            this.close_data()
+        }
+
+        show() {
+            this.elem.classList.toggle('is-active')
+            this.on_show()
+        }
+
+        close() {
+            this.elem.classList.toggle('is-active')
+            this.on_close()
+        }
+
+        close_data() {
+
+            let modalClose = this.elem.querySelectorAll("[data-bulma-modal='close'], .modal-background")
+            let that = this
+            modalClose.forEach((e) => {
+                e.addEventListener("click", () => {
+
+                    that.elem.classList.toggle('is-active')
+
+                    let event = new Event('modal:close')
+
+                    that.elem.dispatchEvent(event);
+                })
+            })
+        }
+
+        on_show() {
+            let event = new Event('modal:show')
+
+            this.elem.dispatchEvent(event);
+        }
+
+        on_close() {
+            let event = new Event('modal:close')
+
+            this.elem.dispatchEvent(event);
+        }
+
+        addEventListener(event, callback) {
+            this.elem.addEventListener(event, callback)
+        }
+    }
+
+    let btn = document.querySelector("#btn")
+    let mdl = new BulmaModal("#myModal")
+
+    let personaId = document.getElementById("IdPersona");
+    let txtNombre = document.getElementById("txtNombre");
+    let txtApellido = document.getElementById("txtApellido");
+    let txtEdad = document.getElementById("txtEdad");
+
+    let nombreModal = document.getElementById("nombreModal");
+    let from = document.getElementById("form");
+
+    let btnEditar = document.getElementById("btnEditar");
+    let btnGuardar = document.getElementById("btnGuardar");
+
+
+
+    let txtError = document.getElementById("txtError");
+
+
+
+    mdl.addEventListener('modal:show', () => {
+        console.log("opened")
+    })
+
+    mdl.addEventListener("modal:close", () => {
+        console.log("closed")
+    })
+    //-----------------------------------------------------------------------
+    //Listado
+    let tabla = document.getElementById("lista");
+    let urlGet = "@Url.Content("~/Persona/Lista")";
+
+    let lista = () => {
+
+        tabla.innerHTML = "";//Limpiamos la tbody
+
+        fetch(urlGet)
+            .then((resp) => resp.json())
+            .then(datos => {
+
+               // console.log(datos)
+                datos.map(x => {
+                    tabla.innerHTML += `
+                    <tr>
+                        <th>${x.ID}</th>
+                        <td>${x.Nombre}</td>
+                        <td>${x.Apellido}</td>
+                        <td>${x.Edad}</td>
+                        <td>
+                            <button
+                                class="button is-primary"
+                                id="btnEditar"
+                                onclick="editarPersona(${x.ID})"> Editar
+                            </button>
+                            <button
+                               class="button is-danger"
+                               onclick="eliminarPersona(${x.ID})"> Eliminar
+                           </button>
+                        </td>
+                    </tr>
+                    `
+                })
+            })
+    }
+
+    lista();
+
+
+    //-----------------------------------------------------------------------
+    //Editar modal
+    //Esta función trae los datos de la lista al modal editar
+
+    let editarPersona = (id) => {
+         let UrlPut = "/Persona/GetPersonaId?ID=" + id;
+         nombreModal.innerHTML = "Actualizar Registro"
+
+        mdl.show()
+
+         fetch(UrlPut)
+             .then((resp) => resp.json())
+             .then(datos =>{
+
+               let x =  JSON.parse(datos)
+                  personaId.value = x.PersonaID
+                  txtNombre.value = x.Nombre
+                  txtApellido.value = x.Apellido
+                  txtEdad.value = x.Edad
+
+                 })
+    }
+
+    //-----------------------------------------------------------------------
+    //Agregar modal
+    btn.addEventListener("click", (ID) => {
+        personaId.value = 0;
+        nombreModal.innerHTML = "Nueva Persona"
+        mdl.show()
+    })
+
+    //El bóton Guardar hace el guardado y tambien el editado
+    btnGuardar.addEventListener('click', (e) => {
+
+        let UrlPost = "@Url.Content("~/Persona/Guardar")"
+
+        fetch(UrlPost, {
+            method: "POST",
+            body: JSON.stringify({
+
+                ID: personaId.value,
+                Nombre: txtNombre.value,
+                Apellido: txtApellido.value,
+                Edad: txtEdad.value
+
+            }),
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
+        }).then((resp) => {
+            if (resp.ok)
+                resp.json();
+            else
+                alert("Error al ejecutar :(");
+        }).then((data) => {
+                mdl.close();
+                lista();
+        }).catch(error => {
+            console.log(error);
+        })
+
+    })
+
+    //-----------------------------------------------------------------------
+    //Eliminar
+    let eliminarPersona = (id) => {
+        let urlDelete = "/Persona/Eliminar?ID=" + id
+        fetch(urlDelete, {
+            method: "POST",
+            body: JSON.stringify({
+
+                ID: id
+
+            }),
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
+        }).then((resp) => {
+            if (resp.ok)
+                resp.json();
+            else
+                alert("Error al ejecutar :(");
+        }).then((data) => {
+            console.log("funcionando");
+            lista();
+
+        }).catch(error => {
+            console.log(error);
+        })
+    }
+
+</script>
