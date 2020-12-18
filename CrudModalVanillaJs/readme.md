@@ -1,5 +1,5 @@
 ﻿
-### Asp.Net mvc, Razor, Fetch api, Javascript y Bulma Framework
+### C#, Asp.Net mvc, Entity Framework Code First, Razor, Fetch api, Javascript y Bulma Framework
 ## Aplicación Crud con Ventana Modal
 
 
